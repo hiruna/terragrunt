@@ -323,6 +323,14 @@ type TerragruntOptions struct {
 	SummaryPerUnit bool
 	// NoAutoProviderCacheDir disables the auto-provider-cache-dir feature even when the experiment is enabled.
 	NoAutoProviderCacheDir bool
+	
+	// Performance tuning parameters for experimental optimizations
+	// MaxDiscoveryWorkers controls the number of parallel workers for file discovery
+	MaxDiscoveryWorkers int
+	// MaxDependencyWorkers controls the number of parallel workers for dependency resolution
+	MaxDependencyWorkers int
+	// MaxDirectoryDepth controls the maximum directory traversal depth during file discovery
+	MaxDirectoryDepth int
 }
 
 // TerragruntOptionsFunc is a functional option type used to pass options in certain integration tests
@@ -431,6 +439,11 @@ func NewTerragruntOptionsWithWriters(stdout, stderr io.Writer) *TerragruntOption
 		NoStackGenerate:            false,
 		VersionManagerFileName:     defaultVersionManagerFileName,
 		NoAutoProviderCacheDir:     false,
+		
+		// Default performance tuning values - conservative defaults that can be overridden
+		MaxDiscoveryWorkers:        0, // 0 = auto-detect (runtime.NumCPU() * 2)
+		MaxDependencyWorkers:       0, // 0 = auto-detect (runtime.NumCPU())
+		MaxDirectoryDepth:          20, // Reasonable default to prevent infinite recursion
 	}
 }
 

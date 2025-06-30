@@ -32,6 +32,11 @@ const (
 	UsePartialParseConfigCacheFlagName     = "use-partial-parse-config-cache"
 	SummaryPerUnitFlagName                 = "summary-per-unit"
 	VersionManagerFileNameFlagName         = "version-manager-file-name"
+	
+	// Performance tuning flags
+	MaxDiscoveryWorkersFlagName            = "max-discovery-workers"
+	MaxDependencyWorkersFlagName           = "max-dependency-workers"
+	MaxDirectoryDepthFlagName              = "max-directory-depth"
 
 	BackendBootstrapFlagName        = "backend-bootstrap"
 	BackendRequireBootstrapFlagName = "backend-require-bootstrap"
@@ -630,6 +635,31 @@ func NewFlags(l log.Logger, opts *options.TerragruntOptions, prefix flags.Prefix
 			Usage:       `Path to generate report schema file in.`,
 			Destination: &opts.ReportSchemaFile,
 		}),
+
+		// Performance tuning flags
+		flags.NewFlag(&cli.GenericFlag[int]{
+			Name:        MaxDiscoveryWorkersFlagName,
+			EnvVars:     tgPrefix.EnvVars(MaxDiscoveryWorkersFlagName),
+			Destination: &opts.MaxDiscoveryWorkers,
+			Usage:       "Maximum number of parallel workers for file discovery. 0 = auto-detect (CPU cores * 2).",
+		},
+			flags.WithDeprecatedNames(terragruntPrefix.FlagNames("max-discovery-workers"), terragruntPrefixControl)),
+
+		flags.NewFlag(&cli.GenericFlag[int]{
+			Name:        MaxDependencyWorkersFlagName,
+			EnvVars:     tgPrefix.EnvVars(MaxDependencyWorkersFlagName),
+			Destination: &opts.MaxDependencyWorkers,
+			Usage:       "Maximum number of parallel workers for dependency resolution. 0 = auto-detect (CPU cores).",
+		},
+			flags.WithDeprecatedNames(terragruntPrefix.FlagNames("max-dependency-workers"), terragruntPrefixControl)),
+
+		flags.NewFlag(&cli.GenericFlag[int]{
+			Name:        MaxDirectoryDepthFlagName,
+			EnvVars:     tgPrefix.EnvVars(MaxDirectoryDepthFlagName),
+			Destination: &opts.MaxDirectoryDepth,
+			Usage:       "Maximum directory traversal depth during file discovery to prevent infinite recursion.",
+		},
+			flags.WithDeprecatedNames(terragruntPrefix.FlagNames("max-directory-depth"), terragruntPrefixControl)),
 	}
 
 	return flags.Sort()

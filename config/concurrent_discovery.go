@@ -19,10 +19,21 @@ type ConcurrentFileDiscovery struct {
 
 // NewConcurrentFileDiscovery creates a new concurrent file discovery instance
 func NewConcurrentFileDiscovery(opts *options.TerragruntOptions) *ConcurrentFileDiscovery {
+	// Use configured values or auto-detect defaults
+	maxWorkers := opts.MaxDiscoveryWorkers
+	if maxWorkers == 0 {
+		maxWorkers = runtime.NumCPU() * 2 // Auto-detect: CPU cores * 2
+	}
+	
+	maxDepth := opts.MaxDirectoryDepth
+	if maxDepth == 0 {
+		maxDepth = 20 // Default to prevent infinite recursion
+	}
+	
 	return &ConcurrentFileDiscovery{
 		opts:              opts,
-		maxWorkers:        runtime.NumCPU() * 200, // Default runtime.NumCPU() * 2
-		maxDirectoryDepth: 20,                     // Prevent infinite recursion
+		maxWorkers:        maxWorkers,
+		maxDirectoryDepth: maxDepth,
 	}
 }
 

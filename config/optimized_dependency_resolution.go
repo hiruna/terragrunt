@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/pkg/log"
 	"github.com/hashicorp/go-multierror"
 	"github.com/zclconf/go-cty/cty"
@@ -42,7 +43,20 @@ type DependencyResolverStats struct {
 // NewOptimizedDependencyResolver creates a new optimized dependency resolver
 func NewOptimizedDependencyResolver() *OptimizedDependencyResolver {
 	return &OptimizedDependencyResolver{
-		maxConcurrency: runtime.NumCPU() * 200, // default: runtime.NumCPU()
+		maxConcurrency: runtime.NumCPU(), // default: runtime.NumCPU()
+		batchTimeout:   5 * time.Second,
+	}
+}
+
+// NewOptimizedDependencyResolverWithOptions creates a new optimized dependency resolver with configurable options
+func NewOptimizedDependencyResolverWithOptions(opts *options.TerragruntOptions) *OptimizedDependencyResolver {
+	maxConcurrency := opts.MaxDependencyWorkers
+	if maxConcurrency == 0 {
+		maxConcurrency = runtime.NumCPU() // Auto-detect: CPU cores
+	}
+	
+	return &OptimizedDependencyResolver{
+		maxConcurrency: maxConcurrency,
 		batchTimeout:   5 * time.Second,
 	}
 }
@@ -260,6 +274,7 @@ func GetGlobalDependencyResolver() *OptimizedDependencyResolver {
 
 // OptimizedDependencyBlocksToCtyValue is an enhanced version of dependencyBlocksToCtyValue
 func OptimizedDependencyBlocksToCtyValue(ctx *ParsingContext, l log.Logger, dependencyConfigs []Dependency) (*cty.Value, error) {
-	resolver := GetGlobalDependencyResolver()
+	// Create a resolver with configurable options from the parsing context
+	resolver := NewOptimizedDependencyResolverWithOptions(ctx.TerragruntOptions)
 	return resolver.ResolveDependenciesOptimized(ctx, l, dependencyConfigs)
 }
