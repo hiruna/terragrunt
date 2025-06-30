@@ -236,6 +236,7 @@ func (c *DiscoveredConfig) Parse(ctx context.Context, l log.Logger, opts *option
 		config.ExcludeBlock,
 	)
 
+	//fmt.Printf("[DiscoveredConfig.Parse] | Calling ParseConfigFile with path: %s\n", parseOpts.TerragruntConfigPath)
 	//nolint: contextcheck
 	cfg, err := config.ParseConfigFile(parsingCtx, l, parseOpts.TerragruntConfigPath, nil)
 	if err != nil {

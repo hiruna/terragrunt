@@ -405,6 +405,18 @@ func getDependencyBlockConfigPathsByFilepath(ctx *ParsingContext, l log.Logger, 
 //
 // This routine will go through the process of obtaining the outputs using `terragrunt output` from the target config.
 func dependencyBlocksToCtyValue(ctx *ParsingContext, l log.Logger, dependencyConfigs []Dependency) (*cty.Value, error) {
+	// Use optimized dependency resolution if experimental optimization is enabled
+	if ctx.TerragruntOptions.Experiments.Evaluate(experiment.OptimizedDependencyResolution) {
+		//fmt.Printf("[dependencyBlocksToCtyValue] | Using enhanced dependency resolution for %d dependencies\n", len(dependencyConfigs))
+		return OptimizedDependencyBlocksToCtyValue(ctx, l, dependencyConfigs)
+	}
+
+	// Fall back to original implementation
+	return dependencyBlocksToCtyValueOriginal(ctx, l, dependencyConfigs)
+}
+
+// dependencyBlocksToCtyValueOriginal is the original implementation without optimization
+func dependencyBlocksToCtyValueOriginal(ctx *ParsingContext, l log.Logger, dependencyConfigs []Dependency) (*cty.Value, error) {
 	paths := []string{}
 
 	// dependencyMap is the top level map that maps dependency block names to the encoded version, which includes

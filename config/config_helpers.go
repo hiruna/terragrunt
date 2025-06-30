@@ -584,6 +584,7 @@ func getWorkingDir(ctx *ParsingContext, l log.Logger) (string, error) {
 		FuncNameGetWorkingDir: wrapVoidToEmptyStringAsFuncImpl(),
 	}
 
+	//fmt.Printf("[getWorkingDir] | Calling ParseConfigFile with path: %s\n", ctx.TerragruntOptions.TerragruntConfigPath)
 	terragruntConfig, err := ParseConfigFile(ctx, l, ctx.TerragruntOptions.TerragruntConfigPath, nil)
 	if err != nil {
 		return "", err
@@ -744,6 +745,7 @@ func ParseTerragruntConfig(ctx *ParsingContext, l log.Logger, configPath string,
 		return *unitValues, nil
 	}
 
+	//fmt.Printf("[ParseTerragruntConfig] | Calling ParseConfigFile with path: %s\n", targetConfig)
 	config, err := ParseConfigFile(ctx, l, targetConfig, nil)
 	if err != nil {
 		return cty.NilVal, err

@@ -109,7 +109,7 @@ func run(ctx context.Context, l log.Logger, opts *options.TerragruntOptions, r *
 	if err != nil {
 		return target.runErrorCallback(l, opts, nil, err)
 	}
-
+	//fmt.Printf("ReadTerragruntConfig\n")
 	terragruntConfig, err := config.ReadTerragruntConfig(ctx, l, opts, config.DefaultParserOptions(l, opts))
 	if err != nil {
 		return target.runErrorCallback(l, opts, terragruntConfig, err)

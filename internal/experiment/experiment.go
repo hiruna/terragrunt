@@ -32,6 +32,15 @@ const (
 	//
 	// Only works with OpenTofu version >= 1.10.
 	AutoProviderCacheDir = "auto-provider-cache-dir"
+	// ParallelDiscovery is the experiment that enables parallel file discovery
+	// for improved performance during config file discovery.
+	ParallelDiscovery = "parallel-discovery"
+	// EnhancedIncludeCache is the experiment that enables enhanced caching
+	// of include configurations to reduce redundant parsing.
+	EnhancedIncludeCache = "enhanced-include-cache"
+	// OptimizedDependencyResolution is the experiment that enables optimized
+	// dependency resolution with better batching and concurrency.
+	OptimizedDependencyResolution = "optimized-dependency-resolution"
 )
 
 const (
@@ -70,6 +79,15 @@ func NewExperiments() Experiments {
 		},
 		{
 			Name: AutoProviderCacheDir,
+		},
+		{
+			Name: ParallelDiscovery,
+		},
+		{
+			Name: EnhancedIncludeCache,
+		},
+		{
+			Name: OptimizedDependencyResolution,
 		},
 	}
 }

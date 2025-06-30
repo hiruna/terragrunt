@@ -8,6 +8,7 @@ import (
 
 	"github.com/gruntwork-io/terragrunt/codegen"
 	"github.com/gruntwork-io/terragrunt/config/hclparse"
+	"github.com/gruntwork-io/terragrunt/internal/experiment"
 	"github.com/gruntwork-io/terragrunt/pkg/log"
 
 	"dario.cat/mergo"
@@ -27,6 +28,18 @@ var fieldsCopyLocks = util.NewKeyLocks()
 
 // Parse the config of the given include, if one is specified
 func parseIncludedConfig(ctx *ParsingContext, l log.Logger, includedConfig *IncludeConfig) (*TerragruntConfig, error) {
+	// Use enhanced include caching if experimental caching is enabled
+	if ctx.TerragruntOptions.Experiments.Evaluate(experiment.EnhancedIncludeCache) {
+		//fmt.Printf("[parseIncludedConfig] | Using enhanced include caching for include %s with includedConfig: %s\n", includedConfig.Path, includedConfig)
+		return parseIncludedConfigWithCaching(ctx, l, includedConfig)
+	}
+
+	// Fall back to original parsing
+	return parseIncludedConfigOriginal(ctx, l, includedConfig)
+}
+
+// parseIncludedConfigOriginal is the original implementation without caching
+func parseIncludedConfigOriginal(ctx *ParsingContext, l log.Logger, includedConfig *IncludeConfig) (*TerragruntConfig, error) {
 	if includedConfig.Path == "" {
 		return nil, errors.New(IncludedConfigMissingPathError(ctx.TerragruntOptions.TerragruntConfigPath))
 	}
@@ -94,7 +107,7 @@ func parseIncludedConfig(ctx *ParsingContext, l log.Logger, includedConfig *Incl
 
 		return PartialParseConfigFile(ctx, l, includePath, includedConfig)
 	}
-
+	//fmt.Printf("[parseIncludedConfig] | Calling ParseConfigFile for include %s with includedConfig: %s\n", includePath, includedConfig)
 	return ParseConfigFile(ctx, l, includePath, includedConfig)
 }
 

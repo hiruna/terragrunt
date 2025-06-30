@@ -1073,6 +1073,13 @@ func GetDefaultConfigPath(workingDir string) string {
 // FindConfigFilesInPath returns a list of all Terragrunt config files in the given path or any subfolder of the path. A file is a Terragrunt
 // config file if it has a name as returned by the DefaultConfigPath method
 func FindConfigFilesInPath(rootPath string, opts *options.TerragruntOptions) ([]string, error) {
+	// Use concurrent discovery if experimental parallel discovery is enabled
+	if opts.Experiments.Evaluate(experiment.ParallelDiscovery) {
+		//fmt.Printf("[FindConfigFilesInPath] | Using concurrent discovery for Terragrunt config files in %s\n", rootPath)
+		return FindConfigFilesInPathConcurrent(rootPath, opts)
+	}
+
+	// Fall back to original sequential discovery
 	configFiles := []string{}
 
 	walkFunc := filepath.Walk
@@ -1158,6 +1165,7 @@ func ReadTerragruntConfig(ctx context.Context, l log.Logger, terragruntOptions *
 	parsingCtx := NewParsingContext(ctx, l, terragruntOptions).WithParseOption(parserOptions)
 
 	// TODO: Remove lint ignore
+	//fmt.Printf("[ReadTerragruntConfig] | Calling ParseConfigFile with path: %s\n", terragruntOptions.TerragruntConfigPath)
 	return ParseConfigFile(parsingCtx, l, terragruntOptions.TerragruntConfigPath, nil) //nolint:contextcheck
 }
 
@@ -1165,6 +1173,8 @@ func ReadTerragruntConfig(ctx context.Context, l log.Logger, terragruntOptions *
 // included in some other config file when resolving relative paths.
 func ParseConfigFile(ctx *ParsingContext, l log.Logger, configPath string, includeFromChild *IncludeConfig) (*TerragruntConfig, error) {
 	var config *TerragruntConfig
+
+	//fmt.Printf("ParseConfigFile start | %s\n", configPath)
 
 	hclCache := cache.ContextCache[*hclparse.File](ctx, HclCacheContextKey)
 
@@ -1215,11 +1225,12 @@ func ParseConfigFile(ctx *ParsingContext, l log.Logger, configPath string, inclu
 		}
 
 		// TODO: Remove lint ignore
+		//fmt.Printf("ParseConfig start...\n")
 		config, err = ParseConfig(ctx, l, file, includeFromChild) //nolint:contextcheck
 		if err != nil {
 			return err
 		}
-
+		//fmt.Printf("ParseConfig end...\n")
 		return nil
 	})
 	if err != nil {

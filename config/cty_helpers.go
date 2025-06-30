@@ -2,9 +2,8 @@
 package config
 
 import (
-	"encoding/json"
-
 	"dario.cat/mergo"
+	"encoding/json"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/function"
 	"github.com/zclconf/go-cty/cty/gocty"
@@ -271,18 +270,71 @@ func includeMapAsCtyVal(ctx *ParsingContext, l log.Logger) (cty.Value, error) {
 		return includeConfigAsCtyVal(ctx, l, bareInclude)
 	}
 
+	//fmt.Printf("[includeMapAsCtyVal] ctx.TrackInclude.CurrentMap: %+v\n", ctx.TrackInclude.CurrentMap)
 	exposedIncludeMap := map[string]cty.Value{}
+	//var wg sync.WaitGroup
+	useWorkers := true
+	if useWorkers {
+		numJobs := len(ctx.TrackInclude.CurrentMap)
+		maxWorkers := numJobs + 1
 
-	for key, included := range ctx.TrackInclude.CurrentMap {
-		parsedIncludedCty, err := includeConfigAsCtyVal(ctx, l, included)
-		if err != nil {
-			return cty.NilVal, err
+		type job struct {
+			key      string
+			included *IncludeConfig
+		}
+		type result struct {
+			job *job
+			val cty.Value
+			err error
+		}
+		jobs := make(chan job)
+		results := make(chan result)
+
+		for w := 1; w <= maxWorkers; w++ {
+			go func(ctxx *ParsingContext, w int, jobs <-chan job, results chan<- result) {
+				for j := range jobs {
+					parsedIncludedCty, err := includeConfigAsCtyVal(ctx, l, *j.included)
+					res := result{
+						job: &j,
+						val: parsedIncludedCty,
+						err: err,
+					}
+					results <- res
+				}
+			}(ctx, w, jobs, results)
 		}
 
-		if parsedIncludedCty != cty.NilVal {
-			l.Debugf("Exposing include block '%s'", key)
+		for key, included := range ctx.TrackInclude.CurrentMap {
+			jobs <- job{
+				key:      key,
+				included: &included,
+			}
+		}
+		close(jobs)
 
-			exposedIncludeMap[key] = parsedIncludedCty
+		for i := 1; i <= numJobs; i++ {
+			res := <-results
+			if res.err != nil {
+				return cty.NilVal, res.err
+			}
+			if res.val != cty.NilVal {
+				l.Debugf("Exposing include block '%s'", res.job.key)
+				exposedIncludeMap[res.job.key] = res.val
+			}
+
+		}
+	} else {
+		for key, included := range ctx.TrackInclude.CurrentMap {
+			parsedIncludedCty, err := includeConfigAsCtyVal(ctx, l, included)
+			if err != nil {
+				return cty.NilVal, err
+			}
+
+			if parsedIncludedCty != cty.NilVal {
+				l.Debugf("Exposing include block '%s'", key)
+
+				exposedIncludeMap[key] = parsedIncludedCty
+			}
 		}
 	}
 
